@@ -19,7 +19,7 @@ public class Wallet {
     /**
      * the statistic to fraud
      */
-    private Integer similarityOD;
+    private String similarityOD;
     /**
      * the graphPath of wallet
      */

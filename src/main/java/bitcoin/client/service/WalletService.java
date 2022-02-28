@@ -10,45 +10,29 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.ResourceUtils;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
+
+import static java.lang.String.valueOf;
 
 public class WalletService {
-    static String JSON_PATH = "static/files/AddressBook.json";
+    static String BOOK_PATH = "static/files/AddressBookForWeb.json";
+    static String PREDICT_PATH = "static/files/AddressPredictions.json";
     static String GRAPH_PATH = "/static/graph/";
-    /**
-     * Read json file，return address list
-     * @return String
-     */
-    public static String readFile() {
-        String jsonStr = "";
-        try {
-            File jsonFile = ResourceUtils.getFile("classpath:"+JSON_PATH);
-            Reader reader = new InputStreamReader(new FileInputStream(jsonFile),"utf-8");//WalletService.class.getClassLoader().getResourceAsStream(JSON_PATH),
-            int ch = 0;
-            StringBuffer buffer = new StringBuffer();
-            while ((ch = reader.read()) != -1) {
-                buffer.append((char) ch);
-            }
-            reader.close();
-            jsonStr = buffer.toString();
-            return jsonStr;
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
+
     /**
      * Read json file from JAR，return address list
      * @return String
      */
-    public static String readFileFromJar(){
+    public static String readFile(String fileType){
         String jsonStr = "";
         try {
             ResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
-            Resource[] resources = resolver.getResources(JSON_PATH);
+            Resource[] resources = new Resource[0];
+            if("BOOK".equals(fileType)){
+                resources = resolver.getResources(BOOK_PATH);
+            }else if("PREDICT".equals(fileType)){
+                resources = resolver.getResources(PREDICT_PATH);
+            }
             Resource resource = resources[0];
             InputStream stream = resource.getInputStream();
             StringBuilder buffer = new StringBuilder();
@@ -71,18 +55,28 @@ public class WalletService {
      * Get random wallet by tag
      * @return Wallet
      */
-    public static Wallet getWallet(String jsonStr,String tag) {
-        Map<String,Object> map = JSON.parseObject(jsonStr, Map.class);
+    public static Wallet getWallet(String bookJsonStr,String predictionJsonStr,String tag) {
+        Map<String,Object> bookMap = JSON.parseObject(bookJsonStr, Map.class);
         List<Wallet> addressObject = new ArrayList<>();
-        for (Map.Entry<String, Object> entry: map.entrySet()) {
+        Map<String,Object> predictionMap = JSON.parseObject(predictionJsonStr, Map.class);
+
+        for (Map.Entry<String, Object> entry: bookMap.entrySet()) {
             JSONArray value = (JSONArray) entry.getValue();
-            if(tag.equalsIgnoreCase(String.valueOf(value.get(0)))){
-                Wallet temp = new Wallet();
-                temp.setAddressOD(entry.getKey());
-                temp.setTagOD(tag);
-                temp.setWebNameOD(String.valueOf(value.get(1)));
-                temp.setSimilarityOD(0);
-                addressObject.add(temp);
+            if(value.size()>1){
+                for(int i =0;i<value.size();i++){
+                    if(tag.equalsIgnoreCase(valueOf(value.get(i)))){
+                        Wallet temp = new Wallet();
+                        temp.setAddressOD(entry.getKey());
+                        temp.setTagOD(tag);
+                        if(i+1<value.size()){
+                            temp.setWebNameOD(valueOf(value.get(i+1)));
+                        }else{
+                            temp.setWebNameOD(valueOf(value.get(1)));
+                        }
+                        temp.setSimilarityOD(valueOf(predictionMap.get(entry.getKey())));
+                        addressObject.add(temp);
+                    }
+                }
             }
         }
         if(!CollectionUtils.isEmpty(addressObject)){
@@ -93,11 +87,11 @@ public class WalletService {
             return result;
         }else{
             Wallet result = new Wallet();
-            result.setAddressOD("No address");
+            result.setAddressOD("——");
             result.setTagOD(tag);
-            result.setWebNameOD("No website");
-            result.setSimilarityOD(0);
-            result.setGraphPathOD("No graph");
+            result.setWebNameOD("——");
+            result.setSimilarityOD("——");
+            result.setGraphPathOD("——");
             return result;
         }
     }
@@ -105,15 +99,35 @@ public class WalletService {
      * Get wallet by address
      * @return Wallet
      */
-    public static Wallet getWalletByAddress(String jsonStr,String address) {
-        Map<String,Object> map = JSON.parseObject(jsonStr, Map.class);
-        JSONArray tags = (JSONArray) map.get(address);
+    public static Wallet getWalletByAddress(String bookJsonStr,String predictionJsonStr,String address) {
+        Map<String,Object> bookMap = JSON.parseObject(bookJsonStr, Map.class);
+        JSONArray tags = (JSONArray) bookMap.get(address);
+        Map<String,Object> predictionMap = JSON.parseObject(predictionJsonStr, Map.class);
+
         Wallet wallet = new Wallet();
         wallet.setAddressOD(address);
-        wallet.setGraphPathOD(GRAPH_PATH+"AV_"+address+".png");
-        wallet.setSimilarityOD(0);
-        wallet.setTagOD(String.valueOf(tags.get(0)));
-        wallet.setWebNameOD(String.valueOf(tags.get(1)));
+        if(Objects.isNull(tags)){
+            wallet.setSimilarityOD("——");
+            wallet.setTagOD("——");
+            wallet.setWebNameOD("——");
+            wallet.setGraphPathOD("——");
+        }else{
+            wallet.setSimilarityOD(valueOf(predictionMap.get(address)));
+            wallet.setTagOD(valueOf(tags.get(0)));
+            wallet.setWebNameOD(valueOf(tags.get(1)));
+            wallet.setGraphPathOD(GRAPH_PATH+"AV_"+address+".png");
+        }
         return wallet;
     }
+
+//    public static void main(String[] args) {
+//        File file2 = new File("/static/graph/AV_1nGkTEppUm22Yhcv7rLE9bVBKrmjMDqvs.png");
+//        System.out.println(file2.exists());
+//        try{
+//            File file = ResourceUtils.getFile("classpath:"+"static/graph/AV_1nGkTEppUm22Yhcv7rLE9bVBKrmjMDqvs.png");
+//            System.out.println(file.exists());
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//    }
 }
