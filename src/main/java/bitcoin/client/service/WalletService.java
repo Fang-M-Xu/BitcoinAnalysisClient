@@ -20,7 +20,7 @@ public class WalletService {
     static String GRAPH_PATH = "/static/graph/";
 
     /**
-     * Read json file from JAR，return address list
+     * Read json file from JAR，return address:tags list in string
      * @return String
      */
     public static String readFile(String fileType){

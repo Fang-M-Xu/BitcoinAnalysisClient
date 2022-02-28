@@ -15,7 +15,7 @@ public class StatisticController {
     String DEFAULT_ADD = "11HgtNU2XSzDvEcfqyu2yafrmGdiGsnAr";
     String DEFAULT_WEBNAME = "Bitcurex.com";
     String DEFAULT_GRAPH = "/static/graph/AV_11HgtNU2XSzDvEcfqyu2yafrmGdiGsnAr.png";
-    Integer DEFAULT_SIMI = 0;
+    String DEFAULT_SIMI = "0.0%";
 
     @GetMapping("/index")
     public String index(ModelMap modelMap){
